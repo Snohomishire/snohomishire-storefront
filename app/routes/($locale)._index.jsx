@@ -45,9 +45,13 @@ export default function Homepage() {
       </div>
 
       <header className="mx-auto flex max-w-7xl items-center justify-between px-6 py-7">
-        <a href="/" className="text-2xl font-semibold tracking-[0.12em]">
-          SNOHOMISHIRE
-        </a>
+       <a href="/" className="flex items-center">
+  <img
+    src="/images/snohomishire-logo.png"
+    alt="Snohomishire — Fruit Trees & Scions"
+    className="h-32 w-auto max-w-[480px] object-contain"
+  />
+</a>
 
         <nav className="hidden items-center gap-8 text-sm md:flex">
           <a href="#story" className="transition hover:text-[#a65b36]">
