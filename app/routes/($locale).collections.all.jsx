@@ -1,4 +1,4 @@
-import {useLoaderData} from 'react-router';
+import {useLoaderData, useLocation, useNavigate} from 'react-router';
 import {getPaginationVariables} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {ProductItem} from '~/components/ProductItem';
@@ -30,17 +30,27 @@ export async function loader(args) {
  */
 async function loadCriticalData({context, request}) {
   const {storefront} = context;
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
-  });
+ const url = new URL(request.url);
+const requestedPageSize = Number(url.searchParams.get('pageSize'));
+
+const pageSize = [12, 24, 48, 100].includes(requestedPageSize)
+  ? requestedPageSize
+  : 12;
+
+const paginationVariables = getPaginationVariables(request, {
+  pageBy: pageSize,
+});
 
   const [{products}] = await Promise.all([
     storefront.query(CATALOG_QUERY, {
-      variables: {...paginationVariables},
+      variables: {
+  ...paginationVariables,
+  sortKey: 'TITLE',
+},
     }),
     // Add other queries here, so that they are loaded in parallel
   ]);
-  return {products};
+  return {products, pageSize};
 }
 
 /**
@@ -55,11 +65,54 @@ function loadDeferredData({context}) {
 
 export default function Collection() {
   /** @type {LoaderReturnData} */
-  const {products} = useLoaderData();
+  const {products, pageSize} = useLoaderData();
+const location = useLocation();
+const navigate = useNavigate();
+
+function changePageSize(event) {
+  const params = new URLSearchParams(location.search);
+
+  params.set('pageSize', event.target.value);
+
+  // Reset pagination when changing page size.
+  params.delete('cursor');
+  params.delete('direction');
+
+  navigate(`${location.pathname}?${params.toString()}`);
+}
 
   return (
     <div className="collection">
-      <h1>Products</h1>
+      <div
+  style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: '10px',
+    margin: '20px 0',
+  }}
+>
+  <label htmlFor="products-per-page">Products per page:</label>
+
+  <select
+    id="products-per-page"
+    value={pageSize}
+    onChange={changePageSize}
+    style={{
+      padding: '8px 12px',
+      borderRadius: '6px',
+      border: '1px solid #ccc',
+      backgroundColor: 'white',
+      color: '#333',
+      cursor: 'pointer',
+    }}
+  >
+    <option value="12">12</option>
+    <option value="24">24</option>
+    <option value="48">48</option>
+    <option value="100">100</option>
+  </select>
+</div>
       <PaginatedResourceSection
         connection={products}
         resourcesClassName="products-grid"
@@ -112,8 +165,15 @@ const CATALOG_QUERY = `#graphql
     $last: Int
     $startCursor: String
     $endCursor: String
+$sortKey: ProductSortKeys
   ) @inContext(country: $country, language: $language) {
-    products(first: $first, last: $last, before: $startCursor, after: $endCursor) {
+    products(
+  first: $first
+  last: $last
+  before: $startCursor
+  after: $endCursor
+  sortKey: $sortKey
+) {
       nodes {
         ...CollectionItem
       }
