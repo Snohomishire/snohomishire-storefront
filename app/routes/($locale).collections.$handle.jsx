@@ -1,4 +1,4 @@
-import {redirect, useLoaderData} from 'react-router';
+import {redirect, useLoaderData, useLocation, useNavigate} from 'react-router';
 import {getPaginationVariables, Analytics} from '@shopify/hydrogen';
 import {PaginatedResourceSection} from '~/components/PaginatedResourceSection';
 import {redirectIfHandleIsLocalized} from '~/lib/redirect';
@@ -32,9 +32,15 @@ export async function loader(args) {
 async function loadCriticalData({context, params, request}) {
   const {handle} = params;
   const {storefront} = context;
-  const paginationVariables = getPaginationVariables(request, {
-    pageBy: 8,
-  });
+  const url = new URL(request.url);
+const requestedPageSize = Number(url.searchParams.get('pageSize'));
+const pageSize = [12, 24, 48, 100].includes(requestedPageSize)
+  ? requestedPageSize
+  : 12;
+
+const paginationVariables = getPaginationVariables(request, {
+  pageBy: pageSize,
+});
 
   if (!handle) {
     throw redirect('/collections');
@@ -42,7 +48,11 @@ async function loadCriticalData({context, params, request}) {
 
   const [{collection}] = await Promise.all([
     storefront.query(COLLECTION_QUERY, {
-      variables: {handle, ...paginationVariables},
+      variables: {
+  handle,
+  ...paginationVariables,
+  sortKey: 'TITLE',
+},
       // Add other queries here, so that they are loaded in parallel
     }),
   ]);
@@ -57,8 +67,9 @@ async function loadCriticalData({context, params, request}) {
   redirectIfHandleIsLocalized(request, {handle, data: collection});
 
   return {
-    collection,
-  };
+  collection,
+  pageSize,
+};
 }
 
 /**
@@ -73,12 +84,55 @@ function loadDeferredData({context}) {
 
 export default function Collection() {
   /** @type {LoaderReturnData} */
-  const {collection} = useLoaderData();
+ const {collection, pageSize} = useLoaderData();
+const location = useLocation();
+const navigate = useNavigate();
+
+function changePageSize(event) {
+  const params = new URLSearchParams(location.search);
+
+  params.set('pageSize', event.target.value);
+
+  // Reset pagination when the page size changes.
+  params.delete('cursor');
+  params.delete('direction');
+
+  navigate(`${location.pathname}?${params.toString()}`);
+}
 
   return (
     <div className="collection">
       <h1>{collection.title}</h1>
-      <p className="collection-description">{collection.description}</p>
+     <div
+  style={{
+    display: 'flex',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: '10px',
+    margin: '20px 0',
+  }}
+>
+  <label htmlFor="products-per-page">Products per page:</label>
+
+  <select
+    id="products-per-page"
+    value={pageSize}
+    onChange={changePageSize}
+    style={{
+      padding: '8px 12px',
+      borderRadius: '6px',
+      border: '1px solid #ccc',
+      backgroundColor: 'white',
+      color: '#333',
+      cursor: 'pointer',
+    }}
+  >
+    <option value="12">12</option>
+    <option value="24">24</option>
+    <option value="48">48</option>
+    <option value="100">100</option>
+  </select>
+</div>
       <PaginatedResourceSection
         connection={collection.products}
         resourcesClassName="products-grid"
@@ -140,19 +194,21 @@ const COLLECTION_QUERY = `#graphql
     $first: Int
     $last: Int
     $startCursor: String
-    $endCursor: String
+  $endCursor: String
+$sortKey: ProductCollectionSortKeys
   ) @inContext(country: $country, language: $language) {
     collection(handle: $handle) {
       id
       handle
       title
       description
-      products(
-        first: $first,
-        last: $last,
-        before: $startCursor,
-        after: $endCursor
-      ) {
+     products(
+  first: $first
+  last: $last
+  before: $startCursor
+  after: $endCursor
+  sortKey: $sortKey
+){
         nodes {
           ...ProductItem
         }
