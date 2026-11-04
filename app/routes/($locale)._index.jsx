@@ -1,3 +1,5 @@
+import {useLoaderData} from 'react-router';
+
 
 export const meta = () => [{title: 'Snohomishire | The Orchard Field Guide'}, {name: 'description', content: 'Heritage grafted apple trees, apple grafting scions, grape cuttings and fig cuttings.'}];
 
@@ -5,6 +7,53 @@ export const meta = () => [{title: 'Snohomishire | The Orchard Field Guide'}, {n
 // Static content only: no demo cart, invented prices, or fake newsletter signup.
 const originalHomepageMarkup = "<div class=\"announcement\">FIELD NOTES FOR FRUIT PEOPLE · EST. IN THE PACIFIC NORTHWEST</div><header class=\"nav\">\n<a aria-label=\"Snohomishire home\" class=\"brand brand-image\" href=\"/\"><img alt=\"Snohomishire logo featuring Mount Rainier\" width=\"140\" height=\"140\" style=\"width:140px;height:140px;object-fit:contain;\" src=\"/images/snohomishire-logo.png\"/></a>\n<nav class=\"navlinks\"><a href=\"#shop\">Shop trees &amp; scions</a><a href=\"#our-way\">Our approach</a><a href=\"#contact\">Contact information coming soon</a></nav>\n\n</header><main>\n<section class=\"hero\">\n<div class=\"hero-copy\"><div class=\"eyebrow\">THE GOOD LIFE, GROWN AT HOME</div><h1>A little wild.<br/>A little heirloom.<br/><em>Entirely yours.</em></h1><p>A fruit tree is more than a plant. It’s spring blossom, late-summer snacks, and a small family tradition in the making. Find your next favorite here.</p><div><a class=\"button\" href=\"#shop\">Explore the field guide <span aria-hidden=\"true\">↗</span></a></div></div>\n<div aria-label=\"Illustration of an apple tree\" class=\"hero-art\"><div class=\"sun\"></div><div class=\"tree\"><div class=\"branch\"></div><div class=\"branch b2\"></div><div class=\"canopy c1\"></div><div class=\"canopy c2\"></div><div class=\"canopy c3\"></div><i class=\"fruit f1\"></i><i class=\"fruit f2\"></i><i class=\"fruit f3\"></i><i class=\"fruit f4\"></i><div class=\"trunk\"></div></div><div class=\"hero-note\"><span>PLATE 001</span> Good roots. Good fruit. Good years.</div><div class=\"hero-stamp\">GROWN<br/>WITH<br/>INTENTION</div></div>\n</section>\n<section class=\"intro\"><div class=\"eyebrow\">THE SNOHOMISHIRE POINT OF VIEW</div><h2>Not just trees.<br/>Future memories.</h2><p>We’re here for the first-time planter, the backyard experimenter, and the person who can name every apple in the farm stand. Our kind of gardening is practical, a little nostalgic, and always delicious.</p></section>\n<section class=\"shop\" id=\"shop\">\n<div class=\"section-head\"><div><div class=\"eyebrow\">THE VARIETY INDEX · VOL. 01</div><h2>Choose your kind of fruit</h2></div><p>Explore the kinds of fruit plants we plan to offer. Individual varieties and availability will be announced here.</p></div>\n\n<div class=\"grid\" id=\"products\">\n\n\n\n<article class=\"product\"><div class=\"product-art\"><span class=\"tag\">Nursery category</span></div><div class=\"product-body\"><h3>Grafted Apple Trees</h3><p>Grafted apple trees for home gardens and small orchards.</p></div></article><article class=\"product\"><div class=\"product-art\"><span class=\"tag\">Nursery category</span></div><div class=\"product-body\"><h3><a href=\"/collections/apple-scions\" style=\"color:inherit;text-decoration:none;\">Apple Scions</a></h3><p>Scionwood to add new varieties to your home orchard.</p></div></article><article class=\"product\"><div class=\"product-art\"><span class=\"tag\">Nursery category</span></div><div class=\"product-body\"><h3>Grape Cuttings</h3><p>Cuttings for growing grapevines at home.</p></div></article><article class=\"product\"><div class=\"product-art\"><span class=\"tag\">Nursery category</span></div><div class=\"product-body\"><h3>Fig Cuttings</h3><p>Cuttings for growing figs in your garden.</p></div></article></div>\n</section>\n<section class=\"story\" id=\"our-way\"><div class=\"story-visual\"><div class=\"rings\"></div></div><div class=\"story-copy\"><div class=\"eyebrow\">FROM THE ORCHARD NOTEBOOK · NO. 01</div><h2>Good fruit takes a little know-how.</h2><p>The right tree for your space depends on more than the fruit you love. Chill hours, pollination partners, rootstock, and harvest timing all matter. We want to help you choose with confidence—not guess at the garden center.</p><a class=\"button outline\" href=\"#grow-notes\">Read the grower notes ↗</a></div></section>\n<section class=\"grow-notes\" id=\"grow-notes\">\n<div class=\"grow-heading\"><div class=\"eyebrow\">THE THREE THINGS WE CHECK FIRST</div><h2>Before you plant,<br/>get to know your tree.</h2><p>Good choices now make happier orchards later. Start with these three details.</p></div>\n<div class=\"grow-list\">\n<article><span class=\"grow-no\">01</span><div><h3>Chill hours</h3><p>Does your variety get enough winter cold where you live?</p></div><span class=\"grow-arrow\">↗</span></article>\n<article><span class=\"grow-no\">02</span><div><h3>Pollination</h3><p>Will it need a compatible flowering partner nearby?</p></div><span class=\"grow-arrow\">↗</span></article>\n<article><span class=\"grow-no\">03</span><div><h3>Harvest window</h3><p>Plan for the fruit you want—and when you want to pick it.</p></div><span class=\"grow-arrow\">↗</span></article>\n</div>\n<p class=\"grow-footnote\">We’ll add variety-specific growing information as the catalog takes shape.</p>\n</section>\n<section class=\"newsletter\" id=\"contact\"><div class=\"eyebrow\">POSTCARDS FROM THE ORCHARD</div><h2>A good thing is growing.</h2><p>Seasonal nursery news and growing notes will be available here soon.</p></section>\n</main><footer class=\"footer\">Snohomishire · Heritage fruit trees, scions, grape cuttings, and fig cuttings.</footer>";
 
+export async function loader({context}) {
+  const result = await context.storefront.query(APPLE_SCIONS_IMAGE_QUERY);
+
+  const imageUrl = result?.collection?.image?.url || null;
+
+  console.log(
+    'APPLE SCIONS COLLECTION IMAGE:',
+    imageUrl || 'NO IMAGE RETURNED',
+  );
+
+  return {appleScionsImage: imageUrl};
+}
+
+const APPLE_SCIONS_IMAGE_QUERY = `#graphql
+  query AppleScionsHomepageImage {
+    collection(handle: "apple-scions") {
+      image {
+        url(transform: {maxWidth: 1000})
+      }
+    }
+  }
+`;
+
 export default function Homepage() {
-  return <div className="snohomishire-original" dangerouslySetInnerHTML={{__html: originalHomepageMarkup}} />;
+  const {appleScionsImage} = useLoaderData();
+
+  let markup = originalHomepageMarkup;
+
+  if (appleScionsImage) {
+    const cards = markup.split('<article class="product">');
+
+    if (cards.length > 2) {
+      cards[2] = cards[2].replace(
+        '<div class="product-art">',
+        '<div class="product-art">' +
+          '<img src="' + appleScionsImage + '" alt="Apple scionwood" ' +
+          'style="width:100%;height:100%;object-fit:cover;display:block;" />'
+      );
+
+      markup = cards.join('<article class="product">');
+    }
+  }
+
+  return (
+    <div
+      className="snohomishire-original"
+      dangerouslySetInnerHTML={{__html: markup}}
+    />
+  );
 }
