@@ -150,6 +150,7 @@ export function Layout({children}) {
   return (
     <html lang="en">
       <head>
+        <link rel="icon" type="image/png" href="/favicon.png?v=2" />
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width,initial-scale=1" />
         <link rel="stylesheet" href={tailwindCss}></link>
